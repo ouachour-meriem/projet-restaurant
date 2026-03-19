@@ -13,6 +13,18 @@ CREATE TABLE IF NOT EXISTS users (
   CONSTRAINT fk_users_roles FOREIGN KEY (role_id) REFERENCES roles(id)
 );
 
+INSERT INTO roles (name, description)
+SELECT 'admin', 'Administrateur'
+WHERE NOT EXISTS (
+  SELECT 1 FROM roles WHERE name = 'admin'
+);
+
+INSERT INTO roles (name, description)
+SELECT 'client', 'Client standard'
+WHERE NOT EXISTS (
+  SELECT 1 FROM roles WHERE name = 'client'
+);
+
 CREATE TABLE IF NOT EXISTS customers (
   id INT PRIMARY KEY AUTO_INCREMENT,
   first_name VARCHAR(100) NOT NULL,

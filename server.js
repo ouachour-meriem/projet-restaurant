@@ -44,16 +44,48 @@ app.get("/health/db", async (req, res) => {
 });
 
 async function startServer() {
-  try {
-    await sequelize.authenticate();
-    console.log("Connexion MySQL reussie");
-    app.listen(PORT, () => {
-      console.log(`Serveur demarre sur http://localhost:${PORT}`);
-    });
-  } catch (error) {
-    console.error("Echec connexion DB au demarrage:", error.message);
-    process.exit(1);
+  const maxAttempts = 10;
+  const delayMs = 1500;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      await sequelize.authenticate();
+      console.log("Connexion MySQL reussie");
+
+      const server = app.listen(PORT, () => {
+        console.log(`Serveur demarre sur http://localhost:${PORT}`);
+      });
+
+      server.on("error", (err) => {
+        if (err.code === "EADDRINUSE") {
+          console.error(
+            `Le port ${PORT} est deja utilise : un autre serveur tourne deja (autre terminal, autre fenetre Cursor, etc.).`
+          );
+          console.error(
+            "Arretez-le avec Ctrl+C, ou tuez le process (PowerShell) :"
+          );
+          console.error(
+            `  Get-NetTCPConnection -LocalPort ${PORT} | Select-Object OwningProcess`
+          );
+          console.error(`  Stop-Process -Id <PID> -Force`);
+          console.error("Ou changez PORT dans votre fichier .env.");
+          process.exit(1);
+        }
+        throw err;
+      });
+
+      return;
+    } catch (error) {
+      console.error(
+        `Echec connexion DB (tentative ${attempt}/${maxAttempts}) :`,
+        error.message
+      );
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
   }
+
+  console.error("Impossible de se connecter a la DB apres plusieurs tentatives.");
+  process.exit(1);
 }
 
 startServer();

@@ -6,12 +6,6 @@ const createUser = async (req, res) => {
   try {
     const { name, email, password, role_id } = req.body;
 
-    if (!name || !email || !password || !role_id) {
-      return res.status(400).json({
-        message: "name, email, password et role_id sont obligatoires"
-      });
-    }
-
     const role = await Role.findByPk(role_id);
     if (!role) return res.status(404).json({ message: "Rôle introuvable" });
 

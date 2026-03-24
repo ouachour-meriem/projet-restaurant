@@ -5,8 +5,8 @@ const createUserValidation = [
     .trim()
     .notEmpty()
     .withMessage("name est obligatoire")
-    .isLength({ min: 2, max: 150 })
-    .withMessage("name doit contenir entre 2 et 150 caractères"),
+    .isLength({ min: 2, max: 100 })
+    .withMessage("name doit contenir entre 2 et 100 caractères"),
   body("email")
     .trim()
     .notEmpty()

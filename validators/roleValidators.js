@@ -8,9 +8,12 @@ const createRoleValidation = [
     .isLength({ min: 2, max: 100 })
     .withMessage("name doit contenir entre 2 et 100 caractères"),
   body("description")
-    .optional()
+    .optional({ nullable: true })
+    .trim()
     .isString()
     .withMessage("description doit être une chaîne de caractères")
+    .isLength({ max: 65535 })
+    .withMessage("description est trop longue")
 ];
 
 module.exports = { createRoleValidation };

@@ -179,11 +179,93 @@ const getCustomerById = async (req, res) => {
   }
 };
 
+const updateCustomer = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        message: "Erreur de validation",
+        errors: errors.array()
+      });
+    }
+
+    const customer = await Customer.findByPk(req.params.id);
+    if (!customer) {
+      return res.status(404).json({ message: "Client introuvable" });
+    }
+
+    const { user_id, first_name, last_name, phone, email, image_url } = req.body;
+
+    const user = await User.findByPk(user_id);
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur introuvable" });
+    }
+
+    const existingProfile = await Customer.findOne({
+      where: {
+        user_id,
+        id: { [Op.ne]: req.params.id }
+      }
+    });
+    if (existingProfile) {
+      return res.status(409).json({
+        message: "Un profil client existe deja pour cet utilisateur"
+      });
+    }
+
+    await customer.update({
+      user_id,
+      first_name,
+      last_name,
+      phone: phone || null,
+      email: email || null,
+      image_url: image_url || null
+    });
+
+    return res.json({
+      message: "Client mis a jour avec succes",
+      data: customer
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Erreur lors de la mise a jour du client",
+      error: error.message
+    });
+  }
+};
+
+const deleteCustomer = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        message: "Erreur de validation",
+        errors: errors.array()
+      });
+    }
+
+    const customer = await Customer.findByPk(req.params.id);
+    if (!customer) {
+      return res.status(404).json({ message: "Client introuvable" });
+    }
+
+    await customer.destroy();
+    return res.json({ message: "Client supprime avec succes" });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Erreur lors de la suppression du client",
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   createCustomer,
   validateCreateCustomer,
   getCustomers,
   validateListCustomers,
   getCustomerById,
-  validateCustomerId
+  validateCustomerId,
+  updateCustomer,
+  deleteCustomer
 };

@@ -50,8 +50,10 @@ const createOrder = async (req, res) => {
 
     const { customer_id, status, total_amount, order_date } = req.body;
 
-    const customer = await Customer.findByPk(customer_id);
-    if (!customer) {
+    const customerExists = await Customer.count({
+      where: { id: customer_id }
+    });
+    if (!customerExists) {
       return res.status(404).json({ message: "Client introuvable" });
     }
 
@@ -175,11 +177,81 @@ const getOrderById = async (req, res) => {
   }
 };
 
+const updateOrder = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        message: "Erreur de validation",
+        errors: errors.array()
+      });
+    }
+
+    const { customer_id, status, total_amount, order_date } = req.body;
+
+    const order = await Order.findByPk(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: "Commande introuvable" });
+    }
+
+    const customerExists = await Customer.count({
+      where: { id: customer_id }
+    });
+    if (!customerExists) {
+      return res.status(404).json({ message: "Client introuvable" });
+    }
+
+    await order.update({
+      customer_id,
+      status,
+      total_amount,
+      order_date: new Date(order_date)
+    });
+
+    return res.json({
+      message: "Commande mise a jour avec succes",
+      data: order
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Erreur lors de la mise a jour de la commande",
+      error: error.message
+    });
+  }
+};
+
+const deleteOrder = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        message: "Erreur de validation",
+        errors: errors.array()
+      });
+    }
+
+    const order = await Order.findByPk(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: "Commande introuvable" });
+    }
+
+    await order.destroy();
+    return res.json({ message: "Commande supprimee avec succes" });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Erreur lors de la suppression de la commande",
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   createOrder,
   validateCreateOrder,
   getOrders,
   validateListOrders,
   getOrderById,
-  validateOrderId
+  validateOrderId,
+  updateOrder,
+  deleteOrder
 };

@@ -6,7 +6,9 @@ const {
   getOrders,
   validateListOrders,
   getOrderById,
-  validateOrderId
+  validateOrderId,
+  updateOrder,
+  deleteOrder
 } = require("../controllers/orderController");
 
 const router = express.Router();
@@ -14,5 +16,7 @@ const router = express.Router();
 router.get("/", authMiddleware, validateListOrders, getOrders);
 router.get("/:id", authMiddleware, validateOrderId, getOrderById);
 router.post("/", authMiddleware, validateCreateOrder, createOrder);
+router.put("/:id", authMiddleware, validateOrderId, validateCreateOrder, updateOrder);
+router.delete("/:id", authMiddleware, validateOrderId, deleteOrder);
 
 module.exports = router;

@@ -121,11 +121,90 @@ const getCategoryById = async (req, res) => {
   }
 };
 
+const validateUpdateCategory = [
+  body("name")
+    .exists({ checkFalsy: true })
+    .withMessage("name est obligatoire")
+    .bail()
+    .isString()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage("name invalide"),
+  body("description")
+    .optional({ nullable: true })
+    .isString()
+    .trim(),
+  body("image_url").optional({ nullable: true }).isString().trim().isLength({ max: 512 })
+];
+
+const updateCategory = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        message: "Erreur de validation",
+        errors: errors.array()
+      });
+    }
+
+    const category = await Category.findByPk(req.params.id);
+    if (!category) {
+      return res.status(404).json({ message: "Categorie introuvable" });
+    }
+
+    const { name, description, image_url } = req.body;
+    await category.update({
+      name,
+      description: description || null,
+      image_url: image_url || null
+    });
+    await category.reload();
+
+    return res.json({
+      message: "Categorie mise a jour",
+      data: category
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Erreur lors de la mise a jour de la categorie",
+      error: error.message
+    });
+  }
+};
+
+const deleteCategory = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        message: "Erreur de validation",
+        errors: errors.array()
+      });
+    }
+
+    const category = await Category.findByPk(req.params.id);
+    if (!category) {
+      return res.status(404).json({ message: "Categorie introuvable" });
+    }
+
+    await category.destroy();
+    return res.status(204).send();
+  } catch (error) {
+    return res.status(500).json({
+      message: "Erreur lors de la suppression de la categorie",
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   createCategory,
   validateCreateCategory,
   getCategories,
   validateListCategories,
   getCategoryById,
-  validateCategoryId
+  validateCategoryId,
+  validateUpdateCategory,
+  updateCategory,
+  deleteCategory
 };

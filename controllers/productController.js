@@ -182,11 +182,135 @@ const getProductById = async (req, res) => {
   }
 };
 
+const validateUpdateProduct = [
+  body("name")
+    .exists({ checkFalsy: true })
+    .withMessage("name est obligatoire")
+    .bail()
+    .isString()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage("name invalide"),
+  body("description")
+    .optional({ nullable: true })
+    .isString()
+    .trim(),
+  body("price")
+    .exists()
+    .withMessage("price est obligatoire")
+    .bail()
+    .isNumeric()
+    .withMessage("price doit etre numerique")
+    .bail()
+    .toFloat(),
+  body("stock")
+    .exists()
+    .withMessage("stock est obligatoire")
+    .bail()
+    .isInt({ allow_leading_zeroes: false })
+    .withMessage("stock doit etre un entier")
+    .bail()
+    .custom((value) => Number(value) >= 0)
+    .withMessage("stock doit etre >= 0")
+    .toInt(),
+  body("category_id")
+    .exists({ checkFalsy: true })
+    .withMessage("category_id est obligatoire")
+    .bail()
+    .isInt()
+    .withMessage("category_id doit etre un entier")
+    .bail()
+    .custom((value) => Number(value) > 0)
+    .withMessage("category_id doit etre > 0")
+    .toInt(),
+  body("image_url").optional({ nullable: true }).isString().trim().isLength({ max: 512 })
+];
+
+const updateProduct = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        message: "Erreur de validation",
+        errors: errors.array()
+      });
+    }
+
+    const product = await Product.findByPk(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: "Produit introuvable" });
+    }
+
+    const { name, description, price, stock, category_id, image_url } = req.body;
+
+    const category = await Category.findByPk(category_id);
+    if (!category) {
+      return res.status(404).json({ message: "Categorie introuvable" });
+    }
+
+    await product.update({
+      name,
+      description: description || null,
+      price,
+      stock,
+      category_id,
+      image_url: image_url || null
+    });
+    await product.reload({
+      include: [
+        {
+          model: Category,
+          as: "category",
+          attributes: ["id", "name", "description", "image_url"]
+        }
+      ]
+    });
+
+    return res.json({
+      message: "Produit mis a jour",
+      data: product
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Erreur lors de la mise a jour du produit",
+      error: error.message
+    });
+  }
+};
+
+const deleteProduct = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        message: "Erreur de validation",
+        errors: errors.array()
+      });
+    }
+
+    const product = await Product.findByPk(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: "Produit introuvable" });
+    }
+
+    await product.destroy();
+    return res.status(204).send();
+  } catch (error) {
+    return res.status(500).json({
+      message: "Erreur lors de la suppression du produit",
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   createProduct,
   validateCreateProduct,
   getProducts,
   validateListProducts,
   getProductById,
-  validateProductId
+  validateProductId,
+  validateUpdateProduct,
+  updateProduct,
+  deleteProduct
 };
